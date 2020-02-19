@@ -7,18 +7,43 @@ namespace DungeonGenerator
 {
     public class DungeonMap
     {
+        //Height and With of the map
         readonly int X;
         readonly int Y;
+
+        //Room types
+        int numberOfRoomTypes;
+
+        //MAPS
+            //mainly for purpose of the map generation
         char[][] dMap;
+            //room ID and doors
         int [][] roomMap;
+            //room types and doors
+        int[][] roomTypeMap;
+
+        //Chars of the dMap
         char wall;
         char door;
+
+        //Max and min room size
         int maxRoomSize;
         int minRoomSize;
+
+        //For purpose of the room generation
         Dictionary<string, int> validStarts;
+
+        //Individual rooms
         Dictionary<int, Room2> rooms2;
+
+        //Watch for purpose of debuging
         System.Diagnostics.Stopwatch watch;
+
+        //Random
         Random rn = new Random();
+
+        //rooms list
+        List<Room2> rooms = new List<Room2>();
 
 
         //CONSTRUCTOR
@@ -38,11 +63,34 @@ namespace DungeonGenerator
 
             OnCreate();
         }
+
+        //OVERLOAD in case of multiple room types
+        public DungeonMap(int X, int Y, int maxRoomSize, int minRoomSize, int numberOfRoomTypes)
+        {
+            this.X = X;
+            this.Y = Y;
+            dMap = new char[Y][];
+            roomMap = new int[Y][];
+            this.maxRoomSize = maxRoomSize;
+            this.minRoomSize = minRoomSize;
+            wall = 'o';
+            door = '!';
+            validStarts = new Dictionary<string, int>();
+            watch = new System.Diagnostics.Stopwatch();
+            rooms2 = new Dictionary<int, Room2>();
+            this.numberOfRoomTypes = numberOfRoomTypes;
+            roomTypeMap = new int[Y][];
+
+            OnCreate();
+        }
+
+        //CORE
         private void OnCreate()
         {
 
             TimeOfExecutionStart(watch);
             FillMap(wall);
+            fillRoomTypeMap();
             TimeOfExecutionEnd(watch, "Filling the map");
             FindValid();
             TimeOfExecutionEnd(watch, "Finding Valid  ");
@@ -57,7 +105,7 @@ namespace DungeonGenerator
             TimeOfExecutionEnd(watch, "Conecting Rooms");
             watch.Stop();
             Console.WriteLine("Buffering Image");
-            BufferRooms();
+            BufferRoomsType();
         }
 
         private void FillMap(char wall)
@@ -159,8 +207,9 @@ namespace DungeonGenerator
                 int indexY = ParseMap(toParse)[1];
 
                 List<string> toRemove = FloodFill(ID, indexX, indexY, 1, roomMap);
+                int roomType = rn.Next(1, numberOfRoomTypes + 1);
 
-                rooms2.Add(ID, new Room2(ID));
+                rooms2.Add(ID, new Room2(ID, toRemove, roomType));
 
                 ID++;
 
@@ -220,6 +269,7 @@ namespace DungeonGenerator
              * 3, selectst random border of the room - merge with current room and delete from list
              * 4, add current room to the list
              */
+            rooms = rooms2.Values.ToList();
             //randomly choosing room
             Random random = new Random();
             int count = rooms2.Count();
@@ -242,14 +292,17 @@ namespace DungeonGenerator
                 else
                 {
                     Console.WriteLine("Error ocured during room maping");
+                    break;
                 }
+                string border = megaRoom.GetBorderMap()[roomToChange].First();
 
-                string border = megaRoom.GetBorderMap()[roomToChange].Last();
+          
 
                 int coordinateX = ParseMap(border)[0];
                 int coordinateY = ParseMap(border)[1];
                 dMap[coordinateY][coordinateX] = door;
                 roomMap[coordinateY][coordinateX] = int.MaxValue;
+                roomTypeMap[coordinateY][coordinateX] = int.MaxValue;
 
                 //merging
                 megaRoom.MergeWith2(rooms2[roomToChange], border);
@@ -442,6 +495,22 @@ namespace DungeonGenerator
             return floodFiled;
         }
 
+        private void fillRoomTypeMap()
+        {
+            for(int i = 0; i< Y; i++)
+            {
+                int[] row = new int[X];
+                for(int j = 0; j< X; j++)
+                {
+                    row[j] = 0;
+
+                }
+                roomTypeMap[i] = row;
+                
+            }
+
+        }
+
 
 
         //DEBUG
@@ -460,7 +529,7 @@ namespace DungeonGenerator
 
         }
 
-        private void BufferRooms()
+        private void BufferRoomsID()
         {
             ImageBuffer buffer = new ImageBuffer(X, Y);
             for(int i = 0; i< Y; i++)
@@ -483,6 +552,47 @@ namespace DungeonGenerator
             buffer.save();
         }
 
+        private void BufferRoomsType()
+        {
+            GetRoomTypeMap();
+            ImageBuffer buffer = new ImageBuffer(X, Y);
+            Dictionary<int, byte[]> TypesColor = new Dictionary<int, byte[]>();
+            for (int i = 0; i < Y; i++)
+            {
+                for (int j = 0; j < X; j++)
+                {
+                    if (roomTypeMap[i][j] == 0)
+                    {
+                        buffer.PlotPixel(j, i, 255, 255, 255);
+                    }
+                    else if (roomTypeMap[i][j] == int.MaxValue)
+                    {
+                        buffer.PlotPixel(j, i, 255, 0, 255);
+                    }
+                    else
+                    {
+                        if (TypesColor.ContainsKey(roomTypeMap[i][j]))
+                        {
+                            byte[] RGB = TypesColor[roomTypeMap[i][j]];
+                            buffer.PlotPixel(j, i, RGB[0], RGB[1], RGB[2]);
+                        }
+                        else
+                        {
+                            byte[] RGB = new byte[3];
+                            RGB[0] = (byte)rn.Next(125, 255);
+                            RGB[1] = (byte)rn.Next(125, 255);
+                            RGB[2] = (byte)rn.Next(125, 255);
+                            TypesColor.Add(roomTypeMap[i][j], RGB);
+                            buffer.PlotPixel(j, i, RGB[0], RGB[1], RGB[2]);
+
+                        }
+                        
+                    }
+                }
+            }
+            buffer.save();
+        }
+
 
 
         //PUBLIC
@@ -499,11 +609,29 @@ namespace DungeonGenerator
             }
         }
 
-        public char[][] GetMap()
+        public char[][] GetCharMap()
         {
             return dMap;
         }
 
+        public int[][] GetIndividualRoomsMap()
+        {
+            return roomMap;
+        }
 
+        public int[][] GetRoomTypeMap()
+        {
+            foreach(var r in rooms)
+            {
+                int type = r.GetRoomType();
+                foreach(var t in r.getFloorTiles())
+                {
+                    int indexX = ParseMap(t)[0];
+                    int indexY = ParseMap(t)[1];
+                    roomTypeMap[indexY][indexX] = type;
+                }
+            }
+            return roomTypeMap;
+        }
     }
 }

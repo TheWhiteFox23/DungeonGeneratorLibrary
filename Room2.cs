@@ -12,15 +12,27 @@ namespace DungeonGenerator
         //id number - smallest is 1, 0 is reserved for walls;
         Dictionary<string, int> border2 = new Dictionary<string, int>();
         int id;
+        int roomType;
         //Map of neighborts and border with them
         Dictionary<int, List<string>> neighbours = new Dictionary<int, List<string>>();
 
         List<int> conections = new List<int>();
 
-        public Room2(int id)
+        List<string> floorTiles = new List<string>();
+
+        public Room2(int id, List<string> floorTiles)
         {
             this.id = id;
+            this.floorTiles = floorTiles;
             conections.Add(id);
+        }
+
+        public Room2(int id, List<string> floorTiles, int roomType)
+        {
+            this.id = id;
+            this.floorTiles = floorTiles;
+            conections.Add(id);
+            this.roomType = roomType;
         }
 
         //Overload - test of git
@@ -106,5 +118,16 @@ namespace DungeonGenerator
             return border2;
 
         }
+
+        public int GetRoomType()
+        {
+            return roomType;
+        }
+
+        public List<string> getFloorTiles()
+        {
+            return floorTiles;
+        }
+
     }
 }
