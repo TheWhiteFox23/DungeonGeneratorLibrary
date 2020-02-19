@@ -28,12 +28,14 @@ namespace DungeonGenerator
         private void OnCreate()
         {
             InitializeGrid();
-            GenerateRoomsRandom();
+            //GenerateRoomsRandom();
+            //SeedingTest();
+            GenerateRoomTightSquares(3, 15);
             MapRooms(10);
             //DeleteSingles();
             //FloodFillCorners(int.MaxValue, 0, 0, 0, Grid);
-            DeleteInnerBlockWalls();
-            MapRoomsFixed(1);
+            //DeleteInnerBlockWalls();
+            //MapRoomsFixed(1);
             BufferImage();
         }
 
@@ -64,6 +66,146 @@ namespace DungeonGenerator
             }
             StopWatchStop("GenerateRoomsRandom");
 
+        }
+
+        public void GenerateRoomTightSquares(int MinRoomSize, int MaxRoomSize)
+        {
+            StopWatchStart();
+            /*int[][] indexes =
+            {
+                new int[]{1,0},
+                new int[]{1,1},
+                new int[]{1,-1},
+                new int[]{0,-1},
+                new int[]{0,1},
+                new int[]{-1,1},
+                new int[]{-1,0},
+                new int[]{-1,-1},
+            };*/
+
+            Dictionary<string, int[]> ValidStarts = new Dictionary<string, int[]>();
+            //find all valid starts
+            for(int i = 1; i<Height-1; i++)
+            {
+                for(int j = 1; j< Width-1; j++)
+                {
+                    ValidStarts.Add(i + "." + j, new int[] { i, j});
+                }
+            }
+
+            //Filling with rooms
+            for (int i = 1; i < Height - 1; i++)
+            {
+                for (int j = 1; j < Width- 1; j++)
+                {
+                    if (ValidStarts.ContainsKey(i +"."+ j))
+                    {
+                        //Console.WriteLine("Valid start found");
+                        int H = random.Next(MinRoomSize, MaxRoomSize);
+                        int W = random.Next(MinRoomSize, MaxRoomSize);
+                        for(int a = 0; a < H; a++)
+                        {
+                            for(int b = 0; b< W; b++)
+                            {
+                                int indexX = j + b;
+                                int indexY = i + a;
+                                if (indexX > 0 && indexY > 0 && indexX < Width - 1 && indexY < Height - 1 && ValidStarts.ContainsKey(indexY + "." + indexX))
+                                {
+                                    //Console.WriteLine("Tile Removed");
+                                    ValidStarts.Remove(indexY + "."  + indexX);
+                                    Grid[indexY][indexX] = 1;
+                                }
+                            }
+                            //removing borders from valid
+                        }
+                        //TODO ---- remove borderts
+                        for (int a = j - 1; a < Width; a++)
+                        {
+                            ValidStarts.Remove((i - 1) + "." + (a));
+                        }
+                        for (int a = j - 1; a < Width; a++)
+                        {
+                            ValidStarts.Remove((i + Height) + "." + (a));
+                        }
+                        for (int a = i - 1; a < Height; a++)
+                        {
+                            ValidStarts.Remove((a) + "." + (j - 1));
+                        }
+                        for (int a = i - 1; a < Height; a++)
+                        {
+                            ValidStarts.Remove((a) + "." + (j + Width));
+                        }
+
+                        PrintAsCharArray();
+                        Console.ReadKey();
+                       //Console.WriteLine("RoomCreated");
+                    }
+                }
+            }
+            StopWatchStop("GenerateRoomTightSquares");
+        }
+        private void SeedingTest()
+        {
+            int InitialSeeds = 100;
+            double Probability = 0.3;
+            int NumberOfPasses = 25;
+            Dictionary<int[], int> Root = new Dictionary<int[], int>();
+            List<int[]> RootAdd = new List<int[]>();
+            List<int[]> RootRemove = new List<int[]>();
+            int Childrens = 1;
+            //Root.Add(new int[] { Height / 2, Height / 2 }, Childrens);
+            for (int i = 0; i < InitialSeeds; i++)
+            {
+                int indexX = random.Next(1, Width - 1);
+                int indeXY = random.Next(1, Height - 1);
+                Root.Add(new int[] {indeXY, indexX}, Childrens);
+                Grid[indeXY][indexX] = 1;
+            }
+            
+            int[][] indexes =
+            {
+                new int[]{0,1},
+                new int[]{0,-1},
+                new int[]{1,0},
+                new int[]{-1,0}
+            };
+            for(int i = 0; i< NumberOfPasses; i++)
+            {
+                foreach(var v in Root.Keys.ToList())
+                {
+                    for(int j = 0; j< indexes.Length; j++)
+                    {
+                        int indexY = v[0] + indexes[j][0];
+                        int indexX = v[1] + indexes[j][1];
+                        double Grow = random.NextDouble();
+                        if (indexX > 0 && indexY > 0 && indexX < Width - 1 && indexY < Height - 1 && Grid[indexY][indexX] == 0 && Grow < Probability)
+                        {
+                            Grid[indexY][indexX] = 1;
+                            RootAdd.Add(new int[] { indexY, indexX });
+                            if(Root[v] > 0)
+                            {
+                                Root[v]--;
+                            }
+                            else
+                            {
+                                RootRemove.Add(v);
+                            }
+                        }
+                    }
+                }
+                foreach(var v in RootAdd)
+                {
+                    if(!Root.ContainsKey(v))Root.Add(v, Childrens);
+                }
+                foreach (var v in RootRemove)
+                {
+                    Root.Remove(v);
+                }
+                Probability -= 0.001;
+                //PrintAsCharArray();
+                //Console.ReadKey();
+           
+            }
         }
         private void MapRooms()
         {
@@ -291,6 +433,7 @@ namespace DungeonGenerator
             if (diagnostics)
             {
                 Console.WriteLine("Procedure --- {0} --- finished execution in time : {1}", testedProcedure, watch.Elapsed);
+                watch.Reset();
                 watch.Stop();
             }
         }
