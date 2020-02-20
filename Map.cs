@@ -16,6 +16,16 @@ namespace DungeonGenerator
         int seed = 4098;
         Random random;
 
+        //RESERVED SYMBOLS - 0 to 20
+        readonly int BORDER = 0;
+        readonly int UNMARKFLOOR = 1;
+        readonly int WALL = 2;
+        readonly int DOOR = 3;
+
+        
+
+
+
         public Map(int Width, int Height)
         {
             this.Height = Height;
@@ -28,13 +38,13 @@ namespace DungeonGenerator
         private void OnCreate()
         {
             InitializeGrid();
-            //GenerateRoomsRandom();
+            GenerateRoomsRandom();
             //SeedingTest();
-            GenerateRoomTightSquares(3, 15);
-            MapRooms(10);
+            //GenerateRoomTightSquares(3, 15);
+            MapRooms(60);
             //DeleteSingles();
             //FloodFillCorners(int.MaxValue, 0, 0, 0, Grid);
-            //DeleteInnerBlockWalls();
+            DeleteInnerBlockWalls();
             //MapRoomsFixed(1);
             BufferImage();
         }
@@ -53,6 +63,8 @@ namespace DungeonGenerator
 
 
         //PUBLIC
+
+            //GRID FILLING ALGORITHMS
         public void GenerateRoomsRandom()
         {
             StopWatchStart();
@@ -67,22 +79,9 @@ namespace DungeonGenerator
             StopWatchStop("GenerateRoomsRandom");
 
         }
-
         public void GenerateRoomTightSquares(int MinRoomSize, int MaxRoomSize)
         {
             StopWatchStart();
-            /*int[][] indexes =
-            {
-                new int[]{1,0},
-                new int[]{1,1},
-                new int[]{1,-1},
-                new int[]{0,-1},
-                new int[]{0,1},
-                new int[]{-1,1},
-                new int[]{-1,0},
-                new int[]{-1,-1},
-            };*/
-
             Dictionary<string, int[]> ValidStarts = new Dictionary<string, int[]>();
             //find all valid starts
             for(int i = 1; i<Height-1; i++)
@@ -100,7 +99,6 @@ namespace DungeonGenerator
                 {
                     if (ValidStarts.ContainsKey(i +"."+ j))
                     {
-                        //Console.WriteLine("Valid start found");
                         int H = random.Next(MinRoomSize, MaxRoomSize);
                         int W = random.Next(MinRoomSize, MaxRoomSize);
                         for(int a = 0; a < H; a++)
@@ -111,102 +109,65 @@ namespace DungeonGenerator
                                 int indexY = i + a;
                                 if (indexX > 0 && indexY > 0 && indexX < Width - 1 && indexY < Height - 1 && ValidStarts.ContainsKey(indexY + "." + indexX))
                                 {
-                                    //Console.WriteLine("Tile Removed");
                                     ValidStarts.Remove(indexY + "."  + indexX);
-                                    Grid[indexY][indexX] = 1;
+                                    Grid[indexY][indexX] = UNMARKFLOOR;
                                 }
                             }
-                            //removing borders from valid
                         }
-                        //TODO ---- remove borderts
-                        for (int a = j - 1; a < Width; a++)
+                        
+                        for(int a = j-1; a<= j + W; a++)
                         {
-                            ValidStarts.Remove((i - 1) + "." + (a));
-                        }
-                        for (int a = j - 1; a < Width; a++)
-                        {
-                            ValidStarts.Remove((i + Height) + "." + (a));
-                        }
-                        for (int a = i - 1; a < Height; a++)
-                        {
-                            ValidStarts.Remove((a) + "." + (j - 1));
-                        }
-                        for (int a = i - 1; a < Height; a++)
-                        {
-                            ValidStarts.Remove((a) + "." + (j + Width));
-                        }
+                            int iX = a;
+                            int iY = (i - 1);
+                            string border = iY + "." + iX;
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            {
+                                ValidStarts.Remove(border);
+                                Grid[iY][iX] = WALL;
+                            }
 
-                        PrintAsCharArray();
-                        Console.ReadKey();
-                       //Console.WriteLine("RoomCreated");
+                        }
+                        for (int a = j - 1; a <=j + W; a++)
+                        {
+                            int iX = a;
+                            int iY = (i + H);
+                            string border = iY + "." + iX;
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            {
+                                ValidStarts.Remove(border);
+                                Grid[iY][iX] = WALL;
+                            }
+                        }
+                        for (int a = i - 1; a <= i +H ; a++)
+                        {
+                            int iX = j-1;
+                            int iY = (a);
+                            string border = iY + "." + iX;
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            {
+                                ValidStarts.Remove(border);
+                                Grid[iY][iX] = WALL;
+                            }
+                        }
+                        for (int a = i - 1; a <=i+ H; a++)
+                        {
+                            int iX = j+W;
+                            int iY = a;
+                            string border = iY + "." + iX;
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            {
+                                ValidStarts.Remove(border);
+
+                                Grid[iY][iX] = WALL;
+                            }
+                        }
                     }
                 }
             }
             StopWatchStop("GenerateRoomTightSquares");
         }
-        private void SeedingTest()
-        {
-            int InitialSeeds = 100;
-            double Probability = 0.3;
-            int NumberOfPasses = 25;
-            Dictionary<int[], int> Root = new Dictionary<int[], int>();
-            List<int[]> RootAdd = new List<int[]>();
-            List<int[]> RootRemove = new List<int[]>();
-            int Childrens = 1;
-            //Root.Add(new int[] { Height / 2, Height / 2 }, Childrens);
-            for (int i = 0; i < InitialSeeds; i++)
-            {
-                int indexX = random.Next(1, Width - 1);
-                int indeXY = random.Next(1, Height - 1);
-                Root.Add(new int[] {indeXY, indexX}, Childrens);
-                Grid[indeXY][indexX] = 1;
-            }
-            
-            int[][] indexes =
-            {
-                new int[]{0,1},
-                new int[]{0,-1},
-                new int[]{1,0},
-                new int[]{-1,0}
-            };
-            for(int i = 0; i< NumberOfPasses; i++)
-            {
-                foreach(var v in Root.Keys.ToList())
-                {
-                    for(int j = 0; j< indexes.Length; j++)
-                    {
-                        int indexY = v[0] + indexes[j][0];
-                        int indexX = v[1] + indexes[j][1];
-                        double Grow = random.NextDouble();
-                        if (indexX > 0 && indexY > 0 && indexX < Width - 1 && indexY < Height - 1 && Grid[indexY][indexX] == 0 && Grow < Probability)
-                        {
-                            Grid[indexY][indexX] = 1;
-                            RootAdd.Add(new int[] { indexY, indexX });
-                            if(Root[v] > 0)
-                            {
-                                Root[v]--;
-                            }
-                            else
-                            {
-                                RootRemove.Add(v);
-                            }
-                        }
-                    }
-                }
-                foreach(var v in RootAdd)
-                {
-                    if(!Root.ContainsKey(v))Root.Add(v, Childrens);
-                }
-                foreach (var v in RootRemove)
-                {
-                    Root.Remove(v);
-                }
-                Probability -= 0.001;
-                //PrintAsCharArray();
-                //Console.ReadKey();
-           
-            }
-        }
+
+            //MAPING METHODS
         private void MapRooms()
         {
             StopWatchStart();
@@ -224,34 +185,11 @@ namespace DungeonGenerator
                 }
             }
             StopWatchStop("MapRooms");
-
-            /*while (allTiles.Count() > 0)
-            {
-                //randomly choose tile and perform flood fill
-                var watch2 = new System.Diagnostics.Stopwatch();
-                string toParse = allTiles.Keys.First();
-                int indexX = ParseMap(toParse)[0];
-                int indexY = ParseMap(toParse)[1];
-
-                List<string> toRemove = FloodFill(ID, indexX, indexY, 1, roomMap);
-                int roomType = rn.Next(1, numberOfRoomTypes + 1);
-
-                rooms2.Add(ID, new Room2(ID, toRemove, roomType));
-
-                ID++;
-
-                foreach (var r in toRemove)
-                {
-                    allTiles.Remove(r);
-                }
-
-            }*/
-
         }
         public void MapRooms(int MinSize)
         {
             StopWatchStart();
-            int ID = 2;
+            int ID = 21;
             //storing all tiles and indexes of the room
             for (int i = 1; i < Height - 1; i++)
             {
@@ -278,7 +216,7 @@ namespace DungeonGenerator
             StopWatchStop("MapRooms");
 
         }
-        public void MapRoomsFixed(int FixedID)
+        public void MapRoomsFixedID(int FixedID)
         {
             StopWatchStart();
             //storing all tiles and indexes of the room
@@ -295,6 +233,8 @@ namespace DungeonGenerator
             StopWatchStop("MapRoomsFixed");
 
         }
+
+            //DEBUGING AND PRINTING
         public void BufferImage()
         {
             StopWatchStart();
@@ -334,7 +274,7 @@ namespace DungeonGenerator
             {
                 for (int j = 0; j < Width; j++)
                 {
-                    if (Grid[i][j] == 0)
+                    if (Grid[i][j] == 0 || Grid[i][j] == 2)
                     {
                         Console.Write("{0} ", 'o');
                     }
@@ -346,6 +286,8 @@ namespace DungeonGenerator
                 Console.WriteLine();
             }
         }
+
+            //CLEANUP
         public void DeleteInnerBlockWalls()
         {
             StopWatchStart();
@@ -408,8 +350,10 @@ namespace DungeonGenerator
                 }
             }
 
-            StopWatchStop("DeleteInnerBlockWalls2");
+            StopWatchStop("DeleteInnerBlockWalls");
         }
+
+            //ROOM CONECTION
 
 
         //DEBUGING METHODS
