@@ -9,7 +9,7 @@ namespace DungeonGenerator
         private List<int[]> FloorTilesSet = new List<int[]>();
         private int[] Center;
         private int Type = 0;
-        private Dictionary<string, int> Borders = new Dictionary<string, int>();
+        private Dictionary<int, List<string>> Borders = new Dictionary<int, List<string>>();
         int ID;
 
 
@@ -75,22 +75,26 @@ namespace DungeonGenerator
             this.Type = Type;
         }
 
-            //BORDER
-        public Dictionary<string, int> getBorders()
+        public void addBorder(int IDOfTheFloorSet, string BorderCoordinates)
+        {
+            if (Borders.ContainsKey(IDOfTheFloorSet))
+            {
+                if(!Borders[IDOfTheFloorSet].Contains(BorderCoordinates))Borders[IDOfTheFloorSet].Add(BorderCoordinates);
+            }
+            else
+            {
+                List<string> add = new List<string>();
+                add.Add(BorderCoordinates);
+                Borders.Add(IDOfTheFloorSet, add);
+            }
+        }
+
+        public Dictionary<int, List<string>> getBorders()
         {
             return Borders;
         }
-        public void addBorder(string Key, int BorderFloorSet)
-        {
-            Borders.Add(Key, BorderFloorSet);
-        }
 
-        /*public List<int> getSurrondings()
-        {
-            return Borders.Values;
-        }*/
-
-            //ID
+        //ID
         public int getID()
         {
             return ID;
