@@ -15,12 +15,14 @@ namespace DungeonGenerator
         bool generateImage = true;
         int seed = 4098;
         Random random;
+        Dictionary<int, FloorSet> IndividualRooms = new Dictionary<int, FloorSet>();
 
         //RESERVED SYMBOLS - 0 to 20
         readonly int BORDER = 0;
         readonly int UNMARKFLOOR = 1;
         readonly int WALL = 2;
         readonly int DOOR = 3;
+        readonly int CENTER = 4;
 
         
 
@@ -38,10 +40,10 @@ namespace DungeonGenerator
         private void OnCreate()
         {
             InitializeGrid();
-            GenerateRoomsRandom();
+            //GenerateRoomsRandom();
             //SeedingTest();
-            //GenerateRoomTightSquares(3, 15);
-            MapRooms(60);
+            GenerateRoomTightSquares(3, 15);
+            MapRooms();
             //DeleteSingles();
             //FloodFillCorners(int.MaxValue, 0, 0, 0, Grid);
             DeleteInnerBlockWalls();
@@ -168,7 +170,7 @@ namespace DungeonGenerator
         }
 
             //MAPING METHODS
-        private void MapRooms()
+        public void MapRooms()
         {
             StopWatchStart();
             int ID = 2;
@@ -179,7 +181,9 @@ namespace DungeonGenerator
                 {
                     if (Grid[i][j] != 0)
                     {
-                        FloodFill(ID, j, i, 1, Grid, false);
+                        FloorSet newFloorSet = new FloorSet(FloodFill(ID, j, i, 1, Grid, false), ID);
+                        //FloodFill(ID, j, i, 1, Grid, false);
+                        IndividualRooms.Add(ID, newFloorSet);
                     }
                     ID++;
                 }
@@ -312,6 +316,7 @@ namespace DungeonGenerator
                                 if (i + 1 < Height && i - 1 >= 0 && (Grid[i - 1][d] == 0 || Grid[i - 1][d] == Grid[W[0]][W[1]]) && (Grid[i + 1][d] == 0 || Grid[i + 1][d] == Grid[W[0]][W[1]]))
                                 {
                                     Grid[i][d] = Grid[W[0]][W[1]];
+                                    IndividualRooms[Grid[W[0]][W[1]]].addToFloorTilesSet(new int[] { d, i });
                                 }
 
                             }
@@ -341,6 +346,7 @@ namespace DungeonGenerator
                                 if (i + 1 < Width && i - 1 >= 0 && (Grid[d][j - 1] == 0 || Grid[d][j - 1] == Grid[W[0]][W[1]]) && (Grid[d][j + 1] == 0 || Grid[d][j + 1] == Grid[W[0]][W[1]]))
                                 {
                                     Grid[d][j] = Grid[W[0]][W[1]];
+                                    IndividualRooms[Grid[W[0]][W[1]]].addToFloorTilesSet(new int[] { d, i });
                                 }
 
                             }
@@ -353,7 +359,56 @@ namespace DungeonGenerator
             StopWatchStop("DeleteInnerBlockWalls");
         }
 
-            //ROOM CONECTION
+        //ROOM CONECTION
+        //private void ConectRooms2()
+        //{
+        //    /**Room Connect algorith destciption
+        //     * 1, Select room - separate it from array
+        //     * 2, Find all of the neghbourt of the room and randomly choose one
+        //     * 3, selectst random border of the room - merge with current room and delete from list
+        //     * 4, add current room to the list
+        //     */
+        //    //List<FloorSet> rooms = IndividualRooms.Values.ToList();
+        //    //randomly choosing room
+        //    Random random = new Random();
+        //    int count = IndividualRooms.Count();
+            
+        //    int rand = random.Next(2, count + 1);
+        //    var megaRoom = IndividualRooms[rand];
+
+
+        //    while (IndividualRooms.Count() != 1)
+        //    {
+        //        IndividualRooms.Remove(megaRoom.getID());
+        //        //Choose one random neighbour and conect
+        //        Room2 neighboutr = new Room2(); //empty constructor (ID is zero and all tiles are empty);
+        //        int roomToChange = 0;
+
+        //        if (megaRoom.GetSurrounding().Count != 0)
+        //        {
+        //            roomToChange = megaRoom.GetSurrounding().First();
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("Error ocured during room maping");
+        //            break;
+        //        }
+        //        string border = megaRoom.GetBorderMap()[roomToChange].First();
+
+
+
+        //        int coordinateX = ParseMap(border)[0];
+        //        int coordinateY = ParseMap(border)[1];
+        //        dMap[coordinateY][coordinateX] = door;
+        //        roomMap[coordinateY][coordinateX] = int.MaxValue;
+        //        roomTypeMap[coordinateY][coordinateX] = int.MaxValue;
+
+        //        //merging
+        //        megaRoom.MergeWith2(rooms2[roomToChange], border);
+        //        rooms2.Remove(roomToChange);
+        //        rooms2.Add(megaRoom.GetID(), megaRoom);
+        //    }
+        //}
 
 
         //DEBUGING METHODS
@@ -479,6 +534,46 @@ namespace DungeonGenerator
             StopWatchStop("DeleteSingles");
 
         }
+
+        private void MapBorders(int[][] roomMap, Dictionary<int, FloorSet> rooms2)
+        {
+            int[][] indexes =
+            {
+                //indexes for X1
+                new int[] {0,1},
+                //indexes for Y1
+                new int[] {1,0},
+                //indexes for X2
+                new int[] {0,-1},
+                //indexes for Y2
+                new int[] {-1,0}
+            };
+            for (int i = 1; i < Height - 1; i++)
+            {
+                for (int j = 1; j < Width - 1; j++)
+                {
+                    if (roomMap[i][j] == 0)
+                    {
+                        for (int t = 0; t < indexes[0].Length; t++)
+                        {
+                            int indexX1 = j + indexes[0][t];
+                            int indexY1 = i + indexes[1][t];
+                            int indexX2 = j + indexes[2][t];
+                            int indexY2 = i + indexes[3][t];
+                            if (indexX1 >= Width || indexX1 <= 0 || indexX2 >= Width || indexX2 <= 0 || indexY1 >= Height || indexY1 <= 0 || indexY2 >= Height || indexY2 <= 0) continue;
+                            if (roomMap[indexY1][indexX1] > 0 && roomMap[indexY2][indexX2] > 0 && roomMap[indexY1][indexX1] != roomMap[indexY2][indexX2])
+                            {
+                                if (!rooms2[roomMap[indexY1][indexX1]].getBorders().ContainsKey(i + "." + j)) rooms2[roomMap[indexY1][indexX1]].addBorder(i + "." + j, roomMap[indexY2][indexX2]);
+                                if (!rooms2[roomMap[indexY2][indexX2]].getBorders().ContainsKey(i + "." + j)) rooms2[roomMap[indexY2][indexX2]].addBorder(i + "." + j, roomMap[indexY1][indexX1]);
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+
 
     }
 }
