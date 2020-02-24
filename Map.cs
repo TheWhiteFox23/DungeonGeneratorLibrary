@@ -17,6 +17,7 @@ namespace DungeonGenerator
         Random random;
         Dictionary<int, FloorSet> IndividualRooms = new Dictionary<int, FloorSet>();
 
+
         int Reserved = 20;
 
         //RESERVED SYMBOLS - 0 to 20
@@ -25,6 +26,8 @@ namespace DungeonGenerator
         readonly int WALL = 2;
         readonly int DOOR = 3;
         readonly int CENTER = 4;
+        readonly int VALIDSTART = 5;
+        readonly int INVALIDSTART = 6;
 
         
 
@@ -45,9 +48,10 @@ namespace DungeonGenerator
             //GenerateRoomsRandom();
             //SeedingTest();
             GenerateRoomTightSquares(3, 15);
-            MapRooms();
-            MapBorders(IndividualRooms,Grid,WALL);
-            TestBorders();
+            //MapRooms();
+            //MapBorders(IndividualRooms,Grid,WALL);
+            ConectRoomTightSquares();
+            //TestBorders();
             //TestRooms();
             //DeleteSingles();
             //FloodFillCorners(int.MaxValue, 0, 0, 0, Grid);
@@ -89,22 +93,26 @@ namespace DungeonGenerator
         public void GenerateRoomTightSquares(int MinRoomSize, int MaxRoomSize)
         {
             StopWatchStart();
-            Dictionary<string, int[]> ValidStarts = new Dictionary<string, int[]>();
+            //Dictionary<string, int[]> ValidStarts = new Dictionary<string, int[]>();
             //find all valid starts
+            int[][] GridCopy = new int[Grid.Length][];
+            Array.Copy(Grid, 0, GridCopy, 0, Grid.Length);
             for(int i = 1; i<Height-1; i++)
             {
                 for(int j = 1; j< Width-1; j++)
                 {
-                    ValidStarts.Add(i + "." + j, new int[] { i, j});
+                    //ValidStarts.Add(i + "." + j, new int[] { i, j});
+                    GridCopy[i][j] = VALIDSTART;
                 }
             }
+            //Console.WriteLine("\t Valid StartFund ---- ElapsedTime :  {0}", watch.Elapsed);
 
             //Filling with rooms
             for (int i = 1; i < Height - 1; i++)
             {
                 for (int j = 1; j < Width- 1; j++)
                 {
-                    if (ValidStarts.ContainsKey(i +"."+ j))
+                    if (GridCopy[i][j] == VALIDSTART)
                     {
                         int H = random.Next(MinRoomSize, MaxRoomSize);
                         int W = random.Next(MinRoomSize, MaxRoomSize);
@@ -114,22 +122,23 @@ namespace DungeonGenerator
                             {
                                 int indexX = j + b;
                                 int indexY = i + a;
-                                if (indexX > 0 && indexY > 0 && indexX < Width - 1 && indexY < Height - 1 && ValidStarts.ContainsKey(indexY + "." + indexX))
+                                if (indexX > 0 && indexY > 0 && indexX < Width - 1 && indexY < Height - 1 && GridCopy[indexY][indexX] == VALIDSTART)
                                 {
-                                    ValidStarts.Remove(indexY + "."  + indexX);
+                                    GridCopy[indexY][indexX] = INVALIDSTART;
+                                    //ValidStarts.Remove(indexY + "."  + indexX);
                                     Grid[indexY][indexX] = UNMARKFLOOR;
                                 }
                             }
                         }
-                        
                         for(int a = j-1; a<= j + W; a++)
                         {
                             int iX = a;
                             int iY = (i - 1);
                             string border = iY + "." + iX;
-                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && GridCopy[iY][iX] == VALIDSTART)
                             {
-                                ValidStarts.Remove(border);
+                                GridCopy[iY][iX] = INVALIDSTART;
+                                //ValidStarts.Remove(border);
                                 Grid[iY][iX] = WALL;
                             }
 
@@ -139,9 +148,9 @@ namespace DungeonGenerator
                             int iX = a;
                             int iY = (i + H);
                             string border = iY + "." + iX;
-                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && GridCopy[iY][iX] == VALIDSTART)
                             {
-                                ValidStarts.Remove(border);
+                                GridCopy[iY][iX] = INVALIDSTART;
                                 Grid[iY][iX] = WALL;
                             }
                         }
@@ -150,9 +159,9 @@ namespace DungeonGenerator
                             int iX = j-1;
                             int iY = (a);
                             string border = iY + "." + iX;
-                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && GridCopy[iY][iX] == VALIDSTART)
                             {
-                                ValidStarts.Remove(border);
+                                GridCopy[iY][iX] = INVALIDSTART;
                                 Grid[iY][iX] = WALL;
                             }
                         }
@@ -161,10 +170,9 @@ namespace DungeonGenerator
                             int iX = j+W;
                             int iY = a;
                             string border = iY + "." + iX;
-                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && ValidStarts.ContainsKey(border))
+                            if (iX > 0 && iY > 0 && iX < Width - 1 && iY < Height - 1 && GridCopy[iY][iX] == VALIDSTART)
                             {
-                                ValidStarts.Remove(border);
-
+                                GridCopy[iY][iX] = INVALIDSTART;
                                 Grid[iY][iX] = WALL;
                             }
                         }
@@ -176,6 +184,27 @@ namespace DungeonGenerator
 
             //MAPING METHODS
         public void MapRooms()
+        {
+            StopWatchStart();
+            int ID = 21;
+            //storing all tiles and indexes of the room
+            for (int i = 1; i < Height-1; i++)
+            {
+                for (int j = 1; j < Width-1; j++)
+                {
+                    if (Grid[i][j] == 1)
+                    {
+                        FloorSet newFloorSet = new FloorSet(FloodFill(ID, j, i, 1, Grid, false), ID);
+                        //FloodFill(ID, j, i, 1, Grid, false);
+                        IndividualRooms.Add(ID, newFloorSet);
+                        ID++;
+                    }
+                    
+                }
+            }
+            StopWatchStop("MapRooms");
+        }        
+        private void MapRooms(Dictionary<int, FloorSet> IndividualRooms)
         {
             StopWatchStart();
             int ID = 21;
@@ -371,56 +400,59 @@ namespace DungeonGenerator
         }
 
         //ROOM CONECTION
-        //private void ConectRooms2()
-        //{
-        //    /**Room Connect algorith destciption
-        //     * 1, Select room - separate it from array
-        //     * 2, Find all of the neghbourt of the room and randomly choose one
-        //     * 3, selectst random border of the room - merge with current room and delete from list
-        //     * 4, add current room to the list
-        //     */
-        //    //List<FloorSet> rooms = IndividualRooms.Values.ToList();
-        //    //randomly choosing room
-        //    Random random = new Random();
-        //    int count = IndividualRooms.Count();
+        public void ConectRoomTightSquares()
+        {
+            StopWatchStart();
+            Dictionary<int, FloorSet> IndividualRooms = new Dictionary<int, FloorSet>();
+            MapRooms(IndividualRooms);
+            MapBorders(IndividualRooms, Grid, WALL);
+            Dictionary<int, int> ConectedRooms = new Dictionary<int, int>();
+            Dictionary<int, List<string>> PossibleConnections = new Dictionary<int, List<string>>();
 
-        //    int rand = random.Next(2, count + 1);
-        //    var megaRoom = IndividualRooms[rand];
+            /* 0. create distionyry of conected rooms, and distionary of posible conections
+             * 1. randomly select room - add to diactionary
+             * 2.get neughbourts - add to dictionary
+             * 3 select one neighbort and one border tile
+             * 4. replace with door tile and continue untill all tiles are conected*/
 
+            //Select fors room and add to dictionary
+            FloorSet FirtRoom = IndividualRooms.Values.ElementAt(random.Next(0,IndividualRooms.Count()));
+            ConectedRooms.Add(FirtRoom.getID(), 1);
+            PossibleConnections = FirtRoom.getBorders();
 
-        //    while (IndividualRooms.Count() != 1)
-        //    {
-        //        IndividualRooms.Remove(megaRoom.getID());
-        //        //Choose one random neighbour and conect
-        //        Room2 neighboutr = new Room2(); //empty constructor (ID is zero and all tiles are empty);
-        //        int roomToChange = 0;
+            while(ConectedRooms.Count != IndividualRooms.Count)
+            {
+                int IDOfTheNextRoom = PossibleConnections.Keys.ElementAt(random.Next(PossibleConnections.Count));
+                int[] CoordinatesOfTheBorderTile = ParseMap(PossibleConnections[IDOfTheNextRoom].ElementAt(random.Next(PossibleConnections[IDOfTheNextRoom].Count)));
+                Grid[CoordinatesOfTheBorderTile[1]][CoordinatesOfTheBorderTile[0]] = DOOR;
 
-        //        if (megaRoom.getSurrounding().Count != 0)
-        //        {
-        //            roomToChange = megaRoom.GetSurrounding().First();
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("Error ocured during room maping");
-        //            break;
-        //        }
-        //        string border = megaRoom.GetBorderMap()[roomToChange].First();
+                ConectedRooms.Add(IDOfTheNextRoom, 1);
+                Dictionary<int, List<string>> ToMerge = IndividualRooms[IDOfTheNextRoom].getBorders();
 
+                //Merging Posible Conections
+                foreach(var i in ToMerge)
+                {
+                    if (!ConectedRooms.ContainsKey(i.Key) && PossibleConnections.ContainsKey(i.Key))
+                    {
+                        List<string> Merge = i.Value;
+                        foreach (var j in Merge)
+                        {
+                            if (!PossibleConnections[i.Key].Contains(j))
+                            {
+                                PossibleConnections[i.Key].Add(j);
+                            }
+                        }
+                    }
+                    else if (!ConectedRooms.ContainsKey(i.Key))
+                    {
+                        PossibleConnections.Add(i.Key, i.Value);
+                    }
+                }
 
-
-        //        int coordinateX = ParseMap(border)[0];
-        //        int coordinateY = ParseMap(border)[1];
-        //        dMap[coordinateY][coordinateX] = door;
-        //        roomMap[coordinateY][coordinateX] = int.MaxValue;
-        //        roomTypeMap[coordinateY][coordinateX] = int.MaxValue;
-
-        //        //merging
-        //        megaRoom.MergeWith2(rooms2[roomToChange], border);
-        //        rooms2.Remove(roomToChange);
-        //        rooms2.Add(megaRoom.GetID(), megaRoom);
-        //    }
-        //}
-
+                PossibleConnections.Remove(IDOfTheNextRoom);
+            }
+            StopWatchStop("ConectRoomTightSquares");
+        }
 
         //DEBUGING METHODS
         private void StopWatchStart()
@@ -585,6 +617,7 @@ namespace DungeonGenerator
         }
         private void MapBorders(Dictionary<int, FloorSet> FloorSetDictionary, int[][] Grid, int Target)
         {
+            StopWatchStart();
             int[][] indexes =
             {
                 new int[]{0,1,0,-1 },
@@ -599,14 +632,14 @@ namespace DungeonGenerator
                     {
                         for(int l = 0; l<indexes.Length; l++)
                         {
-                            Console.WriteLine("SearchingBorder");
+                            //Console.WriteLine("SearchingBorder");
                             int iX1 = j + indexes[l][0];
                             int iY1 = i + indexes[l][1];
                             int iX2 = j + indexes[l][2];
                             int iY2 = i + indexes[l][3];
                             if (iX1 <= 0 || iX2 <= 0 || iY1 <= 0 || iY2 <= 0 || iX1 >= Width || iX2 >= Width || iY1 >= Height || iY2 >= Height)
                             {
-                                Console.WriteLine("OutOfBounds Coordinates 1: {0}  Coordinates 2: {1} ", iX1 +"." + iY1, iX2 + "." + iY2);
+                                //Console.WriteLine("OutOfBounds Coordinates 1: {0}  Coordinates 2: {1} ", iX1 +"." + iY1, iX2 + "." + iY2);
                                 continue;
                             }
                             if (Grid[iY1][iX1] != Grid[iY2][iX2] && Grid[iY1][iX1] >Reserved && Grid[iY2][iX2] > Reserved)
@@ -620,6 +653,32 @@ namespace DungeonGenerator
                     }
                 }
             }
+            StopWatchStop("MapingBorders");
+
+        }
+        private int[] ParseMap(string mapOutput)
+        {
+            string X = "";
+            string Y = "";
+            bool dot = false;
+            var arr = mapOutput.ToCharArray();
+            for (int i = 0; i < mapOutput.Length; i++)
+            {
+                if (!dot && arr[i] != '.')
+                {
+                    Y = Y + arr[i];
+                }
+                else if (arr[i] == '.')
+                {
+                    dot = true;
+                }
+                else
+                {
+                    X = X + arr[i];
+                }
+            }
+            int[] ret = { int.Parse(X), int.Parse(Y) };
+            return ret;
 
         }
 
