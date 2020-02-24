@@ -28,6 +28,7 @@ namespace DungeonGenerator
         readonly int CENTER = 4;
         readonly int VALIDSTART = 5;
         readonly int INVALIDSTART = 6;
+        readonly int MAPPED = 7;
 
         
 
@@ -50,7 +51,7 @@ namespace DungeonGenerator
             GenerateRoomTightSquares(3, 15);
             //MapRooms();
             //MapBorders(IndividualRooms,Grid,WALL);
-            ConectRoomTightSquares();
+            ConectRoomTightSquaresRAMOptimalized();
             //TestBorders();
             //TestRooms();
             //DeleteSingles();
@@ -454,6 +455,36 @@ namespace DungeonGenerator
             StopWatchStop("ConectRoomTightSquares");
         }
 
+        public void ConectRoomTightSquaresRAMOptimalized()
+        {
+            StopWatchStart();
+            /*1. Loop Throu Grid and find rooms - if unconected - FloodfileRoom
+             * 2. Map rooms Border
+             * 3. repleca one border by the door
+             * 4. set neighbourt room filed and continuet the loop
+             */
+            int[][] GridCopy = new int[Grid.Length][];
+            Array.Copy(Grid, 0, GridCopy, 0, Grid.Length);
+             for(int i = 1; i< Height-1; i++)
+            {
+                for(int j = 1; j< Width-1; j++)
+                {
+                    if (Grid[i][j] == UNMARKFLOOR)
+                    {
+                        var list = FloodFillBorderMaping(MAPPED, j, i, 1, GridCopy, false);
+                        Console.Write("Current Borders");
+                        foreach(var r in list)
+                        {
+                            Console.Write(r[0] + "." + r[1] + "  ");
+                        }
+                        Console.WriteLine();
+                    }
+                }
+            }
+           
+            StopWatchStop("ConectRoomTightSquaresRAMOptimalized");
+        }
+
         //DEBUGING METHODS
         private void StopWatchStart()
         {
@@ -581,7 +612,68 @@ namespace DungeonGenerator
             }
             //StopWatchStop("FloodFillCorners");
             return floodFiled.Values.ToList();
-        }
+        }         
+        private List<int[]> FloodFillBorderMaping(int ID, int X, int Y, int target, int[][] roomMap, bool corners)
+        {
+            //StopWatchStart();
+            Dictionary<string,int[]> floodFiled = new Dictionary<string,int[]>();
+            Dictionary<string, int[]> Borders = new Dictionary<string, int[]>();
+            Queue<int[]> queue = new Queue<int[]>();
+            queue.Enqueue(new int[] { X, Y });
+            while (queue.Count() > 0)
+            {
+                if (!floodFiled.ContainsKey(X + "." + Y)) floodFiled.Add(X+"."+Y,new int[] { X, Y });
+                int indexX = queue.Peek()[0];
+                int indexY = queue.Dequeue()[1];
+                int[] W = { indexX, indexY };
+                int[] E = { indexX, indexY };
+
+
+                //Increase WEST until WALL is found
+                while (W[1] >= 0 && W[1] < roomMap[1].Length && W[0] >= 0 && W[0] < roomMap[1].Length && roomMap[W[1]][W[0]] == target)
+                {
+                    W[0]--;
+                }
+                //WEST is now coordinates of the WALL
+                if(!Borders.ContainsKey(W[0] + "." + W[1]) && Grid[W[1]][W[0]] == WALL)
+                    Borders.Add(W[0] + "." + W[1], new int[] { W[0], W[1] });
+
+                //Increase East till EAST is WAll
+                while (E[1] >= 0 && E[1] < roomMap[1].Length && E[0] >= 0 && E[0] < roomMap[1].Length && roomMap[E[1]][E[0]] == target)
+                {
+                    E[0]++;
+                }
+                //EAST is now WAll and can be added into the Bolders
+                if (!Borders.ContainsKey(E[0] + "." + E[1]) && Grid[E[1]][E[0]] == WALL)
+                    Borders.Add(E[0] + "." + E[1], new int[] { E[0], E[1] });
+
+                for (int i = W[0] + 1; i < E[0]; i++)
+                {
+                    roomMap[W[1]][i] = ID;
+                    if(!floodFiled.ContainsKey(i + "." + W[1]))floodFiled.Add(i +"."+ W[1], new int[] { i, W[1] });
+                    if (W[1] + 1 < roomMap.Length && roomMap[W[1] + 1][i] == target)
+                    {
+                        queue.Enqueue(new int[] { i, W[1] + 1 });
+                    }else if(W[1] + 1 < roomMap.Length && roomMap[W[1] + 1][i] == WALL)
+                    {
+                        if (!Borders.ContainsKey(i + "." + (W[1] + 1)))
+                            Borders.Add(i + "." + (W[1]+1), new int[] { i, W[1]+1 });
+                    }
+                    if (W[1] - 1 >= 0 && roomMap[W[1] - 1][i] == target)
+                    {
+                        queue.Enqueue(new int[] { i, W[1] - 1 });
+                    }
+                    else if (W[1] - 1 >= 0 && roomMap[W[1] - 1][i] == WALL)
+                    {
+                        if (!Borders.ContainsKey(i + "." + (W[1] - 1)))
+                            Borders.Add(i + "." + (W[1] - 1), new int[] { i, W[1] - 1 });
+                    }
+                }
+            }
+            //StopWatchStop("FloodFillCorners");
+            return Borders.Values.ToList();
+        } 
+
         private void DeleteSingles()
         {
             StopWatchStart();
@@ -616,6 +708,7 @@ namespace DungeonGenerator
 
         }
         private void MapBorders(Dictionary<int, FloorSet> FloorSetDictionary, int[][] Grid, int Target)
+
         {
             StopWatchStart();
             int[][] indexes =
@@ -653,6 +746,44 @@ namespace DungeonGenerator
                     }
                 }
             }
+            StopWatchStop("MapingBorders");
+
+        }
+        private void MapBorders(Dictionary<int, FloorSet> FloorSetDictionary, List<int[]> ListOfBlockToCheck, int Target)
+        {
+            StopWatchStart();
+            int[][] indexes =
+            {
+                new int[]{0,1,0,-1 },
+                new int[]{1,0,-1,0 },
+            };
+            //Search trohrou the borders and look for WALL tile that conect 2 diferent FloorSet
+             foreach(var i in ListOfBlockToCheck)
+             {
+                 if (Grid[i[1]][i[0]] == Target)
+                 {
+                     for(int l = 0; l<indexes.Length; l++)
+                      {
+                            //Console.WriteLine("SearchingBorder");
+                         int iX1 = i[1] + indexes[l][0];
+                         int iY1 = i[0] + indexes[l][1];
+                         int iX2 = i[1] + indexes[l][2];
+                         int iY2 = i[0] + indexes[l][3];
+                         if (iX1 <= 0 || iX2 <= 0 || iY1 <= 0 || iY2 <= 0 || iX1 >= Width || iX2 >= Width || iY1 >= Height || iY2 >= Height)
+                         {
+                             //Console.WriteLine("OutOfBounds Coordinates 1: {0}  Coordinates 2: {1} ", iX1 +"." + iY1, iX2 + "." + iY2);
+                             continue;
+                            }
+                         if (Grid[iY1][iX1] != Grid[iY2][iX2] && Grid[iY1][iX1] >Reserved && Grid[iY2][iX2] > Reserved)
+                         {
+                             FloorSetDictionary[Grid[iY1][iX1]].addBorder(Grid[iY2][iX2], i + "." + j);
+                             FloorSetDictionary[Grid[iY2][iX2]].addBorder(Grid[iY1][iX1], i + "." + j);
+                                break;
+                         }
+                     }
+                 }
+             }
+            
             StopWatchStop("MapingBorders");
 
         }
