@@ -21,15 +21,15 @@ namespace DungeonGenerator
         int Reserved = 20;
 
         //RESERVED SYMBOLS - 0 to 20
-        readonly private int BORDER = 0;
-        readonly private int UNMARKEDFLOOR = 1;
-        readonly private int WALL = 2;
-        readonly private int DOOR = 3;
-        readonly private int CENTER = 4;
-        readonly private int VALIDSTART = 5;
-        readonly private int INVALIDSTART = 6;
-        readonly private int MAPPED = 7;
-        readonly private int TEMPORARY = 8;
+        readonly public int BORDER = 0;
+        readonly public int UNMARKEDFLOOR = 1;
+        readonly public int WALL = 2;
+        readonly public int DOOR = 3;
+        readonly public int CENTER = 4;
+        readonly public int VALIDSTART = 5;
+        readonly public int INVALIDSTART = 6;
+        readonly public int MAPPED = 7;
+        readonly public int TEMPORARY = 8;
 
 
 
@@ -558,9 +558,18 @@ namespace DungeonGenerator
             }
         }
 
+        /// <summary>
+        /// Set Diagnostics - writing times of executions
+        /// </summary>
+        /// <param name="Diagnostics">Diagnostic bool</param>
+        public void setDiagnostics(bool Diagnostics)
+        {
+            this.diagnostics = Diagnostics;
+        }
 
-        
-        
+
+
+
 
 
 
