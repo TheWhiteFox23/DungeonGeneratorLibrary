@@ -42,18 +42,18 @@ namespace DungeonGenerator
             OnCreate();
         }
 
-        /*OnCreate Method
-         * Is used mainly for debugigng purpose and can probably bee deleted
-         * Group Method necessary for creatin of the instance and remaining methods
-         */
+        /// <summary>
+        /// Gather all the methods necessary for succesful cretion of the MAP class instance
+        /// </summary>
         private void OnCreate()
         {
             InitializeGrid();
         }
 
-        /*IitializeGrid
-         * Create symethric 2D representing MAp
-         */
+
+        /// <summary>
+        /// Initialize 2D int array representing the MAP
+        /// </summary>
         private void InitializeGrid()
         {
             StopWatchStart();
@@ -67,13 +67,11 @@ namespace DungeonGenerator
         }
 
 
-        //PUBLIC
-
-        //GRID FILLING ALGORITHMS
-
-        /*GenerateRoomTightSquares
-         * Filling grid with randomly generated rooms, place near to each other
-         */
+        /// <summary>
+        /// Fill empty grid fith rooms of random size (Within the range) - rooms are tightly packed together
+        /// </summary>
+        /// <param name="MinRoomSize">Minimum size of the rooms</param>
+        /// <param name="MaxRoomSize">Masimum size of the rooms</param>
         public void GenerateRoomTightSquares(int MinRoomSize, int MaxRoomSize)
         {
             StopWatchStart();
@@ -166,11 +164,10 @@ namespace DungeonGenerator
             StopWatchStop("GenerateRoomTightSquares");
         }
 
-        //DEBUGING AND PRINTING
 
-        /*BufferImage
-         * Create Image in the project folder representing the map
-         */
+        /// <summary>
+        /// Create image file representing the MAP
+        /// </summary>
         public void BufferImage()
         {
             StopWatchStart();
@@ -208,9 +205,10 @@ namespace DungeonGenerator
             StopWatchStop("BufferImage");
         }
 
-        /*PrintAsCharArray
-         * print char representation of the map on the console
-         */
+
+        /// <summary>
+        /// Print CHAR representation of the map on the console(Unreadable for large outputs)
+        /// </summary>
         public void PrintAsCharArray()
         {
             for (int i = 0; i < Height; i++)
@@ -230,16 +228,16 @@ namespace DungeonGenerator
             }
         }
 
-        //ROOM CONECTION
 
-        /*ConectRoomTightSquaresRAMOptimalized
-         * Conect room generated with GenerateRoomTightSquares 
-         * soo that every single room is accesable
-         */
-        public void ConectRoomTightSquaresRAMOptimalized()
+        /// <summary>
+        ///         /// Conectint (Create DOOR tile in the wall) all the rooms in the MAP grid
+        /// </summary>
+        /// <param name="FinalID">INT - tiles will be set to this Value</param>
+        /// <param name="TargetID">Target value - this tiles will be replaced with FinalID</param>
+        public void ConectRoomTightSquaresRAMOptimalized(int FinalID, int TargetID)
         {
             StopWatchStart();
-            FloodFillConnect(MAPPED, 1, 1, Grid);
+            FloodFillConnect(FinalID,TargetID, 1, 1, Grid);
             for(int i = 1; i<Height; i++)
             {
                 for(int j = 1; j<Width; j++)
@@ -260,14 +258,17 @@ namespace DungeonGenerator
                         }
                         FloodFill(UNMARKEDFLOOR, Coordinates[0], Coordinates[1], MAPPED, Grid, false);
                         FloodFill(UNMARKEDFLOOR, j, i, TEMPORARY, Grid, false);
-                        FloodFillConnect(MAPPED, Coordinates[0], Coordinates[1], Grid);
+                        FloodFillConnect(FinalID, TargetID, Coordinates[0], Coordinates[1], Grid);
                     }
                 }
             }
             StopWatchStop("ConectRoomTightSquaresRAMOptimalized");
         }
 
-        //DEBUGING METHODS
+
+        /// <summary>
+        /// Start watch - Used for debuging purpose - enabled/disabled by setDebugging(bool setting)
+        /// </summary>
         private void StopWatchStart()
         {
             if (diagnostics)
@@ -275,6 +276,10 @@ namespace DungeonGenerator
                 watch.Start();
             }
         }
+        /// <summary>
+        /// Restart watch and print elapset time, together with name of the tested method - Used for debuging purpose - enabled/disabled by setDebugging(bool setting)
+        /// </summary>
+        /// <param name="testedProcedure">Name of the tested method</param>
         private void StopWatchRestart(string testedProcedure)
         {
             if (diagnostics)
@@ -283,6 +288,10 @@ namespace DungeonGenerator
                 watch.Restart();
             }
         }
+        /// <summary>
+        /// Stop watch and print elapset time, together with name of the tested method - Used for debuging purpose - enabled/disabled by setDebugging(bool setting)
+        /// </summary>
+        /// <param name="testedProcedure">Name of the tested method</param>
         private void StopWatchStop(string testedProcedure)
         {
             if (diagnostics)
@@ -293,7 +302,17 @@ namespace DungeonGenerator
             }
         }
 
-        //HElP METHODS
+        /// <summary>
+        /// Floodfill continous tile in the grid - retun list (if the int[2]), representing X and Y coordinates of the FloodFiled tiles of the MAP grid
+        /// </summary>
+        /// <param name="ID">INT - Continuous tiles will be set to this value</param>
+        /// <param name="X"> X coordinate of the point, where floodFiling will start</param>
+        /// <param name="Y"> Y coordinate of the point, where floodFiling will start</param>
+        /// <param name="target">INT representing the type of the tile that should be replaced with ID</param>
+        /// <param name="roomMap">2D where that will be effected by the FloodFill methods</param>
+        /// <param name="corners">if TRUE corners will be count into the FloodFill</param>
+        /// <returns></returns>
+
         private List<int[]> FloodFill(int ID, int X, int Y, int target, int[][] roomMap, bool corners)
         {
             //StopWatchStart();
@@ -353,7 +372,17 @@ namespace DungeonGenerator
             }
             //StopWatchStop("FloodFillCorners");
             return floodFiled.Values.ToList();
-        }         
+        }
+        /// <summary>
+        /// FloodFill Continuous tiles and return List<int[2]> of the X and Y coordinates of the BORDER/WAll tiles 
+        /// This method is currently used only in ConectRoomTightSquaresRAMOptimalized to get all of the BORDER tiles of the continuous TILES
+        /// </summary>
+        /// <param name="ID">INT - Continuous tiles will be replaced with this value</param>
+        /// <param name="X">X coordinate of the point, where floodFiling will start</param>
+        /// <param name="Y">Y coordinate of the point, where floodFiling will start</param>
+        /// <param name="target">INT representing the type of the tile that should be replaced with ID</param>
+        /// <param name="roomMap">2D where that will be effected by the FloodFill methods</param>
+        /// <returns></returns>
         private List<int[]> FloodFillBorderMaping(int ID, int X, int Y, int target, int[][] roomMap)
         {
             //StopWatchStart();
@@ -413,7 +442,19 @@ namespace DungeonGenerator
             }
             //StopWatchStop("FloodFillCorners");
             return Borders.Values.ToList();
-        } 
+        }
+        /// <summary>
+        /// MAP borders of the continuous tile set(presenting to the method in ListOfBlockToCheck parameter)
+        /// check if the parameter of the border tiles correspods with the setting -  IF inner and outer tilese is same as presented in parameters
+        /// Write results in given dictionary 
+        /// </summary>
+        /// <param name="ValidDoorPositionsAndFirsNeighbourtTile">Dictionary where valid border tiles will be stored in format:
+        /// KEY - string YCoordinate.XCoordinate int[]{Xcoordinate, YCoordinate}</param>
+        /// <param name="ListOfBlockToCheck">List of tested border tiles</param>
+        /// <param name="Target">Tipe of the border tile Ussualy WALL</param>
+        /// <param name="Grid">2D where will method look for ansvers</param>
+        /// <param name="InnerCell">Inner cell type</param>
+        /// <param name="OuterCell">Outer cell type</param>
         private void MapBorders(Dictionary<string, int[]> ValidDoorPositionsAndFirsNeighbourtTile, List<int[]> ListOfBlockToCheck, int Target, int[][] Grid, int InnerCell, int OuterCell)
         {
             //StopWatchStart();
@@ -460,6 +501,11 @@ namespace DungeonGenerator
             //StopWatchStop("MapingBorders");
 
         }
+        /// <summary>
+        /// Take string in format YCoordinate.Xcoordinate and return int[]{XCoordinate, YCoordinate}
+        /// </summary>
+        /// <param name="mapOutput">Inpurt string in format YCoordinate.Xcoordinate</param>
+        /// <returns></returns>
         private int[] ParseMap(string mapOutput)
         {
             string X = "";
@@ -485,14 +531,21 @@ namespace DungeonGenerator
             return ret;
 
         }
-        private void FloodFillConnect(int ID, int CoordinateX, int CoordinateY, int[][] Grid)
+        /// <summary>
+        /// Help method for ConectRoomTightSquaresRAMOptimalized - randomly conect stream of tiles with given ID
+        /// </summary>
+        /// <param name="ID">ID - RoomTiles will be set to this type</param>
+        /// <param name="TARGET">Type of the tile that will be replaced</param>
+        /// <param name="CoordinateX">XCoordinate of the point inside the inicial room</param>
+        /// <param name="CoordinateY">YCoordinate of the point inside the inicial room</param>
+        /// <param name="Grid">2D array where changes will take place</param>
+        private void FloodFillConnect(int ID,int TARGET, int CoordinateX, int CoordinateY, int[][] Grid)
         {
-            //int[] StartingPoint = new int[] { CoordinateX, CoordinateY };
             while (true)
             {
-                List<int[]> Borders = FloodFillBorderMaping(ID, CoordinateX, CoordinateY, UNMARKEDFLOOR, Grid);
+                List<int[]> Borders = FloodFillBorderMaping(ID, CoordinateX, CoordinateY, TARGET, Grid);
                 Dictionary<string, int[]> ValidDoorPositionsAndFirsNeighbourtTile = new Dictionary<string, int[]>();
-                MapBorders(ValidDoorPositionsAndFirsNeighbourtTile, Borders, WALL, Grid, ID, UNMARKEDFLOOR);
+                MapBorders(ValidDoorPositionsAndFirsNeighbourtTile, Borders, WALL, Grid, ID, TARGET);
                 if (ValidDoorPositionsAndFirsNeighbourtTile.Count == 0) break;
 
                 //randomly choose one valid border
