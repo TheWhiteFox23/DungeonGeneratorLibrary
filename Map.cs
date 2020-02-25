@@ -42,25 +42,18 @@ namespace DungeonGenerator
             OnCreate();
         }
 
+        /*OnCreate Method
+         * Is used mainly for debugigng purpose and can probably bee deleted
+         * Group Method necessary for creatin of the instance and remaining methods
+         */
         private void OnCreate()
         {
             InitializeGrid();
-            GenerateRoomsRandom();
-            //SeedingTest();
-            //GenerateRoomTightSquares(15, 15);
-            //MapRooms();
-            //MapBorders(IndividualRooms,Grid,WALL);
-            //ConectRoomTightSquaresRAMOptimalized();
-            
-            //TestBorders();
-            //TestRooms();
-            //DeleteSingles();
-            //FloodFillCorners(int.MaxValue, 0, 0, 0, Grid);
-            DeleteInnerBlockWalls();
-            ConectRoomTightSquaresRAMOptimalized();
-            //MapRoomsFixed(1);
-            BufferImage();
         }
+
+        /*IitializeGrid
+         * Create symethric 2D representing MAp
+         */
         private void InitializeGrid()
         {
             StopWatchStart();
@@ -76,7 +69,11 @@ namespace DungeonGenerator
 
         //PUBLIC
 
-            //GRID FILLING ALGORITHMS
+        //GRID FILLING ALGORITHMS
+
+        /*GenerateRoomTightSquares
+         * Filling grid with randomly generated rooms, place near to each other
+         */
         public void GenerateRoomTightSquares(int MinRoomSize, int MaxRoomSize)
         {
             StopWatchStart();
@@ -169,8 +166,11 @@ namespace DungeonGenerator
             StopWatchStop("GenerateRoomTightSquares");
         }
 
+        //DEBUGING AND PRINTING
 
-            //DEBUGING AND PRINTING
+        /*BufferImage
+         * Create Image in the project folder representing the map
+         */
         public void BufferImage()
         {
             StopWatchStart();
@@ -207,6 +207,10 @@ namespace DungeonGenerator
             }
             StopWatchStop("BufferImage");
         }
+
+        /*PrintAsCharArray
+         * print char representation of the map on the console
+         */
         public void PrintAsCharArray()
         {
             for (int i = 0; i < Height; i++)
@@ -226,14 +230,16 @@ namespace DungeonGenerator
             }
         }
 
-
-
         //ROOM CONECTION
+
+        /*ConectRoomTightSquaresRAMOptimalized
+         * Conect room generated with GenerateRoomTightSquares 
+         * soo that every single room is accesable
+         */
         public void ConectRoomTightSquaresRAMOptimalized()
         {
             StopWatchStart();
             FloodFillConnect(MAPPED, 1, 1, Grid);
-            //int ID = Reserved + 1;
             for(int i = 1; i<Height; i++)
             {
                 for(int j = 1; j<Width; j++)
@@ -250,22 +256,16 @@ namespace DungeonGenerator
                         }
                         else
                         {
-                            //Console.WriteLine("Empty Borders");
-                            //BufferImage();
                             break;
                         }
-                        
                         FloodFill(UNMARKEDFLOOR, Coordinates[0], Coordinates[1], MAPPED, Grid, false);
                         FloodFill(UNMARKEDFLOOR, j, i, TEMPORARY, Grid, false);
                         FloodFillConnect(MAPPED, Coordinates[0], Coordinates[1], Grid);
-                        //ID++;
                     }
                 }
             }
-            StopWatchStop("loodFillConectWholeArray");
+            StopWatchStop("ConectRoomTightSquaresRAMOptimalized");
         }
-
-
 
         //DEBUGING METHODS
         private void StopWatchStart()
@@ -292,7 +292,6 @@ namespace DungeonGenerator
                 watch.Stop();
             }
         }
-
 
         //HElP METHODS
         private List<int[]> FloodFill(int ID, int X, int Y, int target, int[][] roomMap, bool corners)
@@ -415,7 +414,6 @@ namespace DungeonGenerator
             //StopWatchStop("FloodFillCorners");
             return Borders.Values.ToList();
         } 
-
         private void MapBorders(Dictionary<string, int[]> ValidDoorPositionsAndFirsNeighbourtTile, List<int[]> ListOfBlockToCheck, int Target, int[][] Grid, int InnerCell, int OuterCell)
         {
             //StopWatchStart();
@@ -510,6 +508,11 @@ namespace DungeonGenerator
 
         
         
+
+
+
+
+
         //REMOVE OR REWRITE
         private void DeleteSingles()
         {
