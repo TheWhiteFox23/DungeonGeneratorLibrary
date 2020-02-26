@@ -49,8 +49,6 @@ namespace DungeonGenerator
         {
             InitializeGrid();
         }
-
-
         /// <summary>
         /// Initialize 2D int array representing the MAP
         /// </summary>
@@ -65,8 +63,6 @@ namespace DungeonGenerator
             }
             StopWatchStop("InitializeGrid");
         }
-
-
         /// <summary>
         /// Fill empty grid fith rooms of random size (Within the range) - rooms are tightly packed together
         /// </summary>
@@ -163,8 +159,13 @@ namespace DungeonGenerator
             }
             StopWatchStop("GenerateRoomTightSquares");
         }
+        /// <summary>
+        /// This method will place random onject in the grit - in random or predefined order
+        /// </summary>
+        public void GenerateRoomRandomObjectPlacement()
+        {
 
-
+        }
         /// <summary>
         /// Create image file representing the MAP
         /// </summary>
@@ -204,8 +205,6 @@ namespace DungeonGenerator
             }
             StopWatchStop("BufferImage");
         }
-
-
         /// <summary>
         /// Print CHAR representation of the map on the console(Unreadable for large outputs)
         /// </summary>
@@ -227,8 +226,6 @@ namespace DungeonGenerator
                 Console.WriteLine();
             }
         }
-
-
         /// <summary>
         ///         /// Conectint (Create DOOR tile in the wall) all the rooms in the MAP grid
         /// </summary>
